@@ -1,0 +1,153 @@
+# Copyright (c) 2025-2026 fei_cong(https://github.com/feicong/feicong-course)
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: 是否上传到Release
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.label }}
+    runs-on: ${{ matrix.runs_on }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux
+            runs_on: ubuntu-24.04
+          - label: macos
+            runs_on: macos-15
+          - label: windows
+            runs_on: windows-2025
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y llvm-18-dev clang-18 cmake ninja-build
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install llvm ninja cmake
+
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          choco install llvm ninja cmake --yes --no-progress
+
+      - name: Build plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "${RUNNER_OS}" in
+            Linux)
+              llvm_cmake_dir="$(llvm-config-18 --cmakedir)"
+              cc=clang-18
+              cxx=clang++-18
+              ;;
+            macOS)
+              llvm_prefix="$(brew --prefix llvm)"
+              llvm_cmake_dir="${llvm_prefix}/lib/cmake/llvm"
+              cc="${llvm_prefix}/bin/clang"
+              cxx="${llvm_prefix}/bin/clang++"
+              ;;
+            Windows)
+              llvm_cmake_dir="C:/Program Files/LLVM/lib/cmake/llvm"
+              cc="C:/Program Files/LLVM/bin/clang.exe"
+              cxx="C:/Program Files/LLVM/bin/clang++.exe"
+              ;;
+          esac
+
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER="$cc" \
+            -DCMAKE_CXX_COMPILER="$cxx" \
+            -DLLVM_DIR="$llvm_cmake_dir"
+
+          cmake --build build --parallel
+
+      - name: Package artifact
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist
+
+          case "${RUNNER_OS}" in
+            Linux)
+              arch="$(uname -m)"
+              archive_name="LLVMObfuscator-linux-${arch}.tar.gz"
+              tar -C build -czf "dist/${archive_name}" libLLVMObfuscator.so
+              ;;
+            macOS)
+              arch="$(uname -m)"
+              archive_name="LLVMObfuscator-macos-${arch}.tar.gz"
+              tar -C build -czf "dist/${archive_name}" libLLVMObfuscator.dylib
+              ;;
+            Windows)
+              archive_name="LLVMObfuscator-windows-x64.zip"
+              powershell -NoProfile -Command \
+                "Compress-Archive -Path 'build/LLVMObfuscator.dll' -DestinationPath 'dist/${archive_name}' -Force"
+              ;;
+          esac
+
+          echo "archive_name=dist/${archive_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.label }}-plugin
+          path: ${{ steps.package.outputs.archive_name }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish release assets
+    needs: build
+    if: ${{ github.event_name == 'push' || github.event.inputs.upload == 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Upload to latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Build
+          files: release-assets/*
+          make_latest: true
