@@ -93,9 +93,15 @@ jobs:
               cxx="${llvm_prefix}/bin/clang++"
               ;;
             Windows)
-              llvm_cmake_dir="C:/msys64/ucrt64/lib/cmake/llvm"
-              cc="C:/msys64/ucrt64/bin/clang.exe"
-              cxx="C:/msys64/ucrt64/bin/clang++.exe"
+              llvm_bindir="$(dirname "$(command -v clang.exe)")"
+              llvm_prefix="$(cd "${llvm_bindir}/.." && pwd)"
+              if command -v cygpath >/dev/null 2>&1; then
+                llvm_bindir="$(cygpath -m "${llvm_bindir}")"
+                llvm_prefix="$(cygpath -m "${llvm_prefix}")"
+              fi
+              llvm_cmake_dir="${llvm_prefix}/lib/cmake/llvm"
+              cc="${llvm_bindir}/clang.exe"
+              cxx="${llvm_bindir}/clang++.exe"
               ;;
           esac
 
