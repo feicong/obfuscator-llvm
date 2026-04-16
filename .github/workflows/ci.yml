@@ -60,6 +60,7 @@ jobs:
 
       - name: Setup MSYS2 LLVM
         if: runner.os == 'Windows'
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
@@ -93,13 +94,18 @@ jobs:
               cxx="${llvm_prefix}/bin/clang++"
               ;;
             Windows)
-              llvm_bindir="$(dirname "$(command -v clang.exe)")"
-              llvm_prefix="$(cd "${llvm_bindir}/.." && pwd)"
+              msys2_root='${{ steps.msys2.outputs.msys2-location }}'
               if command -v cygpath >/dev/null 2>&1; then
-                llvm_bindir="$(cygpath -m "${llvm_bindir}")"
-                llvm_prefix="$(cygpath -m "${llvm_prefix}")"
+                msys2_root="$(cygpath -u "${msys2_root}")"
               fi
+              llvm_prefix="${msys2_root}/ucrt64"
+              llvm_bindir="${llvm_prefix}/bin"
               llvm_cmake_dir="${llvm_prefix}/lib/cmake/llvm"
+              if command -v cygpath >/dev/null 2>&1; then
+                llvm_prefix="$(cygpath -m "${llvm_prefix}")"
+                llvm_bindir="$(cygpath -m "${llvm_bindir}")"
+                llvm_cmake_dir="$(cygpath -m "${llvm_cmake_dir}")"
+              fi
               cc="${llvm_bindir}/clang.exe"
               cxx="${llvm_bindir}/clang++.exe"
               ;;
