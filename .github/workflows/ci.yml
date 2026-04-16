@@ -58,12 +58,22 @@ jobs:
           set -euo pipefail
           brew install llvm ninja cmake
 
+      - name: Setup MSYS2 LLVM
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-clang
+            mingw-w64-ucrt-x86_64-llvm
+
       - name: Install Windows dependencies
         if: runner.os == 'Windows'
         shell: bash
         run: |
           set -euo pipefail
-          choco install llvm ninja cmake --yes --no-progress
+          choco install ninja cmake --yes --no-progress
 
       - name: Build plugin
         shell: bash
@@ -83,10 +93,9 @@ jobs:
               cxx="${llvm_prefix}/bin/clang++"
               ;;
             Windows)
-              llvm_cmake_dir="$("/c/Program Files/LLVM/bin/llvm-config.exe" --cmakedir)"
-              llvm_bindir="$("/c/Program Files/LLVM/bin/llvm-config.exe" --bindir)"
-              cc="${llvm_bindir}/clang.exe"
-              cxx="${llvm_bindir}/clang++.exe"
+              llvm_cmake_dir="C:/msys64/ucrt64/lib/cmake/llvm"
+              cc="C:/msys64/ucrt64/bin/clang.exe"
+              cxx="C:/msys64/ucrt64/bin/clang++.exe"
               ;;
           esac
 
