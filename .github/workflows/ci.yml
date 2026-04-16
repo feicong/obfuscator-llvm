@@ -83,9 +83,10 @@ jobs:
               cxx="${llvm_prefix}/bin/clang++"
               ;;
             Windows)
-              llvm_cmake_dir="C:/Program Files/LLVM/lib/cmake/llvm"
-              cc="C:/Program Files/LLVM/bin/clang.exe"
-              cxx="C:/Program Files/LLVM/bin/clang++.exe"
+              llvm_cmake_dir="$(llvm-config --cmakedir)"
+              llvm_bindir="$(llvm-config --bindir)"
+              cc="${llvm_bindir}/clang.exe"
+              cxx="${llvm_bindir}/clang++.exe"
               ;;
           esac
 
