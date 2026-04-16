@@ -34,8 +34,6 @@ jobs:
             runs_on: ubuntu-24.04
           - label: macos
             runs_on: macos-15
-          - label: windows
-            runs_on: windows-2025
 
     steps:
       - name: Checkout source
@@ -58,24 +56,6 @@ jobs:
           set -euo pipefail
           brew install llvm ninja cmake
 
-      - name: Setup MSYS2 LLVM
-        if: runner.os == 'Windows'
-        id: msys2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          install: >-
-            mingw-w64-ucrt-x86_64-clang
-            mingw-w64-ucrt-x86_64-llvm
-
-      - name: Install Windows dependencies
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-          choco install ninja cmake --yes --no-progress
-
       - name: Build plugin
         shell: bash
         run: |
@@ -92,22 +72,6 @@ jobs:
               llvm_cmake_dir="${llvm_prefix}/lib/cmake/llvm"
               cc="${llvm_prefix}/bin/clang"
               cxx="${llvm_prefix}/bin/clang++"
-              ;;
-            Windows)
-              msys2_root='${{ steps.msys2.outputs.msys2-location }}'
-              if command -v cygpath >/dev/null 2>&1; then
-                msys2_root="$(cygpath -u "${msys2_root}")"
-              fi
-              llvm_prefix="${msys2_root}/ucrt64"
-              llvm_bindir="${llvm_prefix}/bin"
-              llvm_cmake_dir="${llvm_prefix}/lib/cmake/llvm"
-              if command -v cygpath >/dev/null 2>&1; then
-                llvm_prefix="$(cygpath -m "${llvm_prefix}")"
-                llvm_bindir="$(cygpath -m "${llvm_bindir}")"
-                llvm_cmake_dir="$(cygpath -m "${llvm_cmake_dir}")"
-              fi
-              cc="${llvm_bindir}/clang.exe"
-              cxx="${llvm_bindir}/clang++.exe"
               ;;
           esac
 
@@ -137,11 +101,6 @@ jobs:
               arch="$(uname -m)"
               archive_name="LLVMObfuscator-macos-${arch}.tar.gz"
               tar -C build -czf "dist/${archive_name}" libLLVMObfuscator.dylib
-              ;;
-            Windows)
-              archive_name="LLVMObfuscator-windows-x64.zip"
-              powershell -NoProfile -Command \
-                "Compress-Archive -Path 'build/LLVMObfuscator.dll' -DestinationPath 'dist/${archive_name}' -Force"
               ;;
           esac
 
