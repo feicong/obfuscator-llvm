@@ -42,6 +42,10 @@ add_library(LLVMObfuscator SHARED Plugin.cpp)
 target_include_directories(LLVMObfuscator PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(LLVMObfuscator PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+if(APPLE)
+  target_link_options(LLVMObfuscator PRIVATE "-undefined" "dynamic_lookup")
+endif()
+
 #Add if needed
 #target_link_libraries(LLVMObfuscator LLVMCore LLVMSupport)
 

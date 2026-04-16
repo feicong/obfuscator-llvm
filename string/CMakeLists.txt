@@ -23,4 +23,5 @@ add_custom_target(generateDecodeIRHeader ALL
 )
 
 add_dependencies(LLVMObfuscator generateDecodeIRHeader)
+target_include_directories(LLVMObfuscator PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_sources(LLVMObfuscator PRIVATE StringObfuscation.cpp)

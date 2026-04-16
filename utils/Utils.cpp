@@ -50,7 +50,12 @@ void fixStack(Function *f) {
     }
 
     for (unsigned int i = 0; i != tmpPhi.size(); ++i) {
-      DemotePHIToStack(tmpPhi.at(i), f->begin()->getTerminator()->getIterator());
+#if LLVM_VERSION_MAJOR >= 19
+      DemotePHIToStack(tmpPhi.at(i),
+                       f->begin()->getTerminator()->getIterator());
+#else
+      DemotePHIToStack(tmpPhi.at(i), f->begin()->getTerminator());
+#endif
     }
 
   } while (tmpReg.size() != 0 || tmpPhi.size() != 0);
