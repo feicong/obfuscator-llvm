@@ -307,8 +307,13 @@ void BogusControlFlow::addBogusFlow(BasicBlock *basicBlock, Function &F) {
 
   // The always true condition. End of the first block
   Twine *var4 = new Twine("condition");
+#if LLVM_VERSION_MAJOR >= 19
   FCmpInst *condition =
       new FCmpInst(basicBlock->end(), FCmpInst::FCMP_TRUE, LHS, RHS, *var4);
+#else
+  FCmpInst *condition =
+      new FCmpInst(*basicBlock, FCmpInst::FCMP_TRUE, LHS, RHS, *var4);
+#endif
   DEBUG_WITH_TYPE("gen", errs() << "bcf: Always true condition created\n");
 
   // Jump to the original basic block if the condition is true or
@@ -343,8 +348,13 @@ void BogusControlFlow::addBogusFlow(BasicBlock *basicBlock, Function &F) {
   originalBB->getTerminator()->eraseFromParent();
   // We add at the end a new always true condition
   Twine *var6 = new Twine("condition2");
+#if LLVM_VERSION_MAJOR >= 19
   FCmpInst *condition2 =
       new FCmpInst(originalBB->end(), CmpInst::FCMP_TRUE, LHS, RHS, *var6);
+#else
+  FCmpInst *condition2 =
+      new FCmpInst(*originalBB, CmpInst::FCMP_TRUE, LHS, RHS, *var6);
+#endif
   BranchInst::Create(originalBBpart2, alteredBB, (Value *)condition2,
                      originalBB);
   DEBUG_WITH_TYPE("gen", errs()
