@@ -83,12 +83,8 @@ jobs:
               cxx="${llvm_prefix}/bin/clang++"
               ;;
             Windows)
-              llvm_config="C:/Program Files/LLVM/bin/llvm-config.exe"
-              if [[ ! -x "${llvm_config}" ]]; then
-                llvm_config="$(command -v llvm-config.exe || command -v llvm-config)"
-              fi
-              llvm_cmake_dir="$("${llvm_config}" --cmakedir)"
-              llvm_bindir="$("${llvm_config}" --bindir)"
+              llvm_cmake_dir="$("C:/Program Files/LLVM/bin/llvm-config.exe" --cmakedir)"
+              llvm_bindir="$("C:/Program Files/LLVM/bin/llvm-config.exe" --bindir)"
               cc="${llvm_bindir}/clang.exe"
               cxx="${llvm_bindir}/clang++.exe"
               ;;
