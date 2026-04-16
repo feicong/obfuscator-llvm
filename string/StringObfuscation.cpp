@@ -1,5 +1,5 @@
 #include "StringObfuscation.h"
-#include "string/decode.h"
+#include "decode.h"
 #include "utils/Utils.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/LazyValueInfo.h"
